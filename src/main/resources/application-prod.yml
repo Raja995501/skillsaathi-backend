@@ -1,28 +1,28 @@
 spring:
   flyway:
-    enabled: false  # TiDB ke sath dev/prod me issue se bachne ke liye false rakho (ya agar MySQL migration scripts hain tabhi true karo)
+    enabled: false
   datasource:
-    url: ${DB_URL:jdbc:mysql://gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/sys?sslMode=REQUIRE}
-    username: ${DB_USERNAME:22dDgebDS2earz5.root}
-    password: ${DB_PASSWORD:7w6NDYWE8RQlNxV4}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2
   jpa:
     hibernate:
-      ddl-auto: update   # Tables automatically create/update ho jayengi
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       ssl:
-        enabled: false  # Agar local ya standard Redis hai toh false rakho
+        enabled: true  # Upstash cloud Redis requires TLS/SSL enabled
 
 logging:
   level:
