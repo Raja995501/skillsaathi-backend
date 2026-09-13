@@ -14,5 +14,5 @@ public class ErrorResponse {
     private int status;
     private Map<String, String> fieldErrors;
     @Builder.Default
-    private Instant timestamp = Instant.now();
+    private String timestamp = Instant.now().toString();
 }
