@@ -11,7 +11,7 @@ spring:
       minimum-idle: 2
   jpa:
     hibernate:
-      ddl-auto: validate   # Changed from 'update' to 'validate' to prevent ALTER command permission errors on TiDB
+      ddl-auto: update  # Changed from 'update' to 'validate' to prevent ALTER command permission errors on TiDB
     show-sql: false
     properties:
       hibernate:
