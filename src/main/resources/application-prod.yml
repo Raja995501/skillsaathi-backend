@@ -18,7 +18,7 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
   data:
     redis:
-       url: ${REDIS_URL
+       url: ${REDIS_URL}
       ssl:
         enabled: true  # Upstash cloud Redis requires TLS/SSL enabled
   mail:
