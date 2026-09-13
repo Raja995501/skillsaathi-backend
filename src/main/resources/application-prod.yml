@@ -11,16 +11,16 @@ spring:
       minimum-idle: 2
   jpa:
     hibernate:
-      ddl-auto: update  # Changed from 'update' to 'validate' to prevent ALTER command permission errors on TiDB
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
   data:
     redis:
-       url: ${REDIS_URL}
+      url: ${REDIS_URL}
       ssl:
-        enabled: true  # Upstash cloud Redis requires TLS/SSL enabled
+        enabled: true
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
