@@ -18,9 +18,7 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+       url: ${REDIS_URL
       ssl:
         enabled: true  # Upstash cloud Redis requires TLS/SSL enabled
   mail:
