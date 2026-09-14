@@ -19,19 +19,6 @@ spring:
   data:
     redis:
       url: ${REDIS_URL}
-      ssl:
-        enabled: true
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
 
 logging:
   level:
@@ -46,3 +33,8 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+
+app:
+  resend:
+    api-key: ${RESEND_API_KEY}
+    from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
