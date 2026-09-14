@@ -22,6 +22,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -33,7 +35,7 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
     private final UserDetailsService userDetailsService;
 
-    @Value("${app.cors.allowed-origins}")
+    @Value("${app.cors.allowed-origins:https://skillsaathi-fronted.vercel.app,http://localhost:5173}")
     private String allowedOrigins;
 
     private static final String[] PUBLIC_ENDPOINTS = {
@@ -55,8 +57,6 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        // Order matters: more specific rule first, so /users/me* stays authenticated
-                        // even though the generic public-profile pattern below looks similar.
                         .requestMatchers("/api/v1/users/me/**", "/api/v1/users/me").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users/{id:[0-9]+}").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
@@ -89,7 +89,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+        
+        // Split origins safely and include Vercel domain explicitly as a fallback safety
+        List<String> origins = new ArrayList<>();
+        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
+            origins.addAll(Arrays.asList(allowedOrigins.split(",")));
+        }
+        if (!origins.contains("https://skillsaathi-fronted.vercel.app")) {
+            origins.add("https://skillsaathi-fronted.vercel.app");
+        }
+
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
