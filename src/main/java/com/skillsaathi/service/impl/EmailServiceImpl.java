@@ -22,7 +22,7 @@ public class EmailServiceImpl implements EmailService {
     @Value("${app.resend.api-key}")
     private String resendApiKey;
 
-    @Value("${app.resend.from-email:onboarding@resend.dev}")
+    @Value("${app.resend.from-email:noreply@skillequator.in}")
     private String fromEmail;
 
     @Override
