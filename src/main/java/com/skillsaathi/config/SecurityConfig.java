@@ -89,7 +89,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
+
         // Split origins safely and include Vercel domain explicitly as a fallback safety
         List<String> origins = new ArrayList<>();
         if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
@@ -98,8 +98,12 @@ public class SecurityConfig {
         if (!origins.contains("https://skillsaathi-fronted.vercel.app")) {
             origins.add("https://skillsaathi-fronted.vercel.app");
         }
+        // Allow all Vercel preview deployments for this project (URLs change on every deploy)
+        if (!origins.contains("https://skillsaathi-fronted-*.vercel.app")) {
+            origins.add("https://skillsaathi-fronted-*.vercel.app");
+        }
 
-        configuration.setAllowedOrigins(origins);
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
