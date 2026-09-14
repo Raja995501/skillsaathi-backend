@@ -1,7 +1,6 @@
 package com.skillsaathi.service.impl;
 
 import com.resend.Resend;
-import com.resend.core.exception.ResendException;
 import com.resend.services.emails.model.CreateEmailOptions;
 import com.skillsaathi.service.EmailService;
 import lombok.extern.slf4j.Slf4j;
@@ -59,9 +58,11 @@ public class EmailServiceImpl implements EmailService {
 
             resend.emails().send(params);
             log.info("Email sent successfully to {}", to);
-        } catch (ResendException ex) {
-            // Don't let email delivery failures break the auth flow.
-            log.warn("Failed to send email to {}: {}", to, ex.getMessage());
+        } catch (Exception ex) {
+            // Don't let email delivery failures break the auth flow
+            // (e.g. Resend's testing-mode restriction: can only send to the
+            // account owner's email until a custom domain is verified).
+            log.error("Failed to send email to {}: {}", to, ex.getMessage());
         }
     }
 }
