@@ -19,6 +19,8 @@ spring:
   data:
     redis:
       url: ${REDIS_URL}
+      ssl:
+        enabled: true
 
 logging:
   level:
