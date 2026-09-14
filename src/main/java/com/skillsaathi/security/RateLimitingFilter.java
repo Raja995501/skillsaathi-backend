@@ -34,7 +34,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         // Apply rate limit specifically to auth and search endpoints
-        if (path.startsWith("/api/auth") || path.startsWith("/api/search")) {
+       if (path.startsWith("/api/v1/auth") || path.startsWith("/api/v1/search")) {
             String clientIp = getClientIP(request);
             Bucket bucket = cache.computeIfAbsent(clientIp, k -> createNewBucket());
 
