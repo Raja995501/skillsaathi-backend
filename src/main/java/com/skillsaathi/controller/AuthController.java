@@ -18,7 +18,10 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
+        // AuthService ke andar handle hoga ki agar user pehle se hai par unverified hai,
+        // toh naya verification link bhej diya jaye aur error na aaye.
         authService.register(request);
+
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Registration successful. Please check your email to verify your account.", null));
     }
