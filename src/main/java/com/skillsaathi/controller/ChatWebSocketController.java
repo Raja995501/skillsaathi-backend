@@ -2,6 +2,7 @@ package com.skillsaathi.controller;
 
 import com.skillsaathi.dto.chat.ChatMessageRequest;
 import com.skillsaathi.dto.chat.MessageResponse;
+import com.skillsaathi.dto.chat.PresenceEventResponse;
 import com.skillsaathi.dto.chat.TypingEventRequest;
 import com.skillsaathi.dto.chat.TypingEventResponse;
 import com.skillsaathi.security.CustomUserDetails;
@@ -15,7 +16,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
-import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -27,9 +27,7 @@ public class ChatWebSocketController {
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload ChatMessageRequest request, Principal principal) {
         Long senderId = extractUserId(principal);
-
         MessageResponse saved = messageService.sendMessage(senderId, request.getConnectionId(), request.getContent());
-
         String destination = "/topic/connection." + request.getConnectionId();
         chatEventPublisher.publish(WsEventType.NEW_MESSAGE, destination, saved);
     }
@@ -50,50 +48,42 @@ public class ChatWebSocketController {
         chatEventPublisher.publish(WsEventType.TYPING, destination, event);
     }
 
-    // FIX: Added missing /app/user.presence handler to broadcast online/offline status!
+    // ✅ FIX: Map ki jagah PresenceEventResponse use kiya, taaki online field sahi se jaaye
     @MessageMapping("/user.presence")
-    public void updatePresence(@Payload Map<String, Object> payload, Principal principal) {
+    public void updatePresence(@Payload PresenceEventResponse request, Principal principal) {
         Long userId = extractUserId(principal);
-        
-        // Ensure payload has the correct user ID from security context
-        payload.put("userId", userId);
 
-        // Broadcast presence status to all subscribed clients
+        PresenceEventResponse event = PresenceEventResponse.builder()
+                .userId(userId)
+                .online(request.isOnline())
+                .build();
+
         String destination = "/topic/presence";
-        chatEventPublisher.publish(WsEventType.PRESENCE, destination, payload);
+        chatEventPublisher.publish(WsEventType.PRESENCE, destination, event);
     }
 
     private Long extractUserId(Principal principal) {
-        if (principal == null) {
-            throw new IllegalStateException("WebSocket principal is null");
-        }
-        
+        if (principal == null) throw new IllegalStateException("WebSocket principal is null");
+
         if (principal instanceof UsernamePasswordAuthenticationToken auth
                 && auth.getPrincipal() instanceof CustomUserDetails userDetails) {
             return userDetails.getId();
         }
-        
-        // Fallback safety if principal itself is CustomUserDetails or Authentication
         if (principal instanceof CustomUserDetails userDetails) {
             return userDetails.getId();
         }
-
         throw new IllegalStateException("WebSocket session is not authenticated properly: " + principal.getClass().getName());
     }
 
     private String extractUserName(Principal principal) {
         if (principal == null) return "User";
-        
+
         if (principal instanceof UsernamePasswordAuthenticationToken auth
                 && auth.getPrincipal() instanceof CustomUserDetails userDetails) {
-            if (userDetails.getUser() != null) {
-                return userDetails.getUser().getName();
-            }
+            if (userDetails.getUser() != null) return userDetails.getUser().getName();
         }
         if (principal instanceof CustomUserDetails userDetails) {
-            if (userDetails.getUser() != null) {
-                return userDetails.getUser().getName();
-            }
+            if (userDetails.getUser() != null) return userDetails.getUser().getName();
         }
         return "User";
     }
