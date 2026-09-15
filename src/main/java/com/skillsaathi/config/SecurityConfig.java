@@ -35,7 +35,7 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
     private final UserDetailsService userDetailsService;
 
-    @Value("${app.cors.allowed-origins:https://skillsaathi-fronted.vercel.app,http://localhost:5173}")
+    @Value("${app.cors.allowed-origins:https://skillequator.in,https://skillsaathi-fronted.vercel.app,http://localhost:5173}")
     private String allowedOrigins;
 
     private static final String[] PUBLIC_ENDPOINTS = {
@@ -90,14 +90,23 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Split origins safely and include Vercel domain explicitly as a fallback safety
         List<String> origins = new ArrayList<>();
         if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
             origins.addAll(Arrays.asList(allowedOrigins.split(",")));
         }
-        if (!origins.contains("https://skillsaathi-fronted.vercel.app")) {
-            origins.add("https://skillsaathi-fronted.vercel.app");
+
+        List<String> defaultOrigins = List.of(
+                "https://skillequator.in",
+                "https://skillsaathi-fronted.vercel.app",
+                "http://localhost:5173"
+        );
+
+        for (String origin : defaultOrigins) {
+            if (!origins.contains(origin)) {
+                origins.add(origin);
+            }
         }
+
         // Allow all Vercel preview deployments for this project (URLs change on every deploy)
         if (!origins.contains("https://skillsaathi-fronted-*.vercel.app")) {
             origins.add("https://skillsaathi-fronted-*.vercel.app");
