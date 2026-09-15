@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -44,10 +45,40 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BadRequestException("An account with this email already exists");
+        Optional<User> existingUserOpt = userRepository.findByEmail(request.getEmail());
+
+        if (existingUserOpt.isPresent()) {
+            User existingUser = existingUserOpt.get();
+
+            // Agar user pehle se verified hai, tab error throw karo
+            if (existingUser.isEmailVerified()) {
+                throw new BadRequestException("An account with this email already exists");
+            }
+
+            // Agar user unverified hai, toh details update karo aur naya verification link bhejo
+            existingUser.setName(request.getName());
+            existingUser.setPassword(passwordEncoder.encode(request.getPassword()));
+            existingUser.setPhone(request.getPhone());
+            existingUser.setCity(request.getCity());
+            existingUser.setState(request.getState());
+            userRepository.save(existingUser);
+
+            // Purana verification token agar ho toh hata sakte hain ya direct naya create kar sakte hain
+            emailVerificationTokenRepository.deleteByUser(existingUser);
+
+            String token = UUID.randomUUID().toString();
+            EmailVerificationToken verificationToken = EmailVerificationToken.builder()
+                    .token(token)
+                    .user(existingUser)
+                    .expiryDate(LocalDateTime.now().plusHours(24))
+                    .build();
+            emailVerificationTokenRepository.save(verificationToken);
+
+            emailService.sendVerificationEmail(existingUser.getEmail(), existingUser.getName(), token);
+            return; // Yahin se successfully return ho jayega
         }
 
+        // Naye user ke liye normal registration logic
         Role userRole = roleRepository.findByName(DEFAULT_ROLE)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Default role '" + DEFAULT_ROLE + "' not found. Seed roles before registering users."));
@@ -124,7 +155,7 @@ public class AuthServiceImpl implements AuthService {
 
         User user = storedToken.getUser();
 
-        // Rotate refresh token: delete old, issue new — limits the blast radius if one is stolen.
+        // Rotate refresh token: delete old, issue new
         refreshTokenRepository.delete(storedToken);
 
         return buildAuthResponse(user);
@@ -141,7 +172,6 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElse(null);
 
-        // Don't reveal whether the email exists — always respond as if it worked.
         if (user == null) {
             return;
         }
@@ -171,7 +201,6 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         passwordResetTokenRepository.delete(resetToken);
-        // Invalidate all existing sessions on password change.
         refreshTokenRepository.deleteByUserId(user.getId());
     }
 
