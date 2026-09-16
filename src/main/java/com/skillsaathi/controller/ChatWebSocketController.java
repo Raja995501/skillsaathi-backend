@@ -48,7 +48,7 @@ public class ChatWebSocketController {
         chatEventPublisher.publish(WsEventType.TYPING, destination, event);
     }
 
-    // ✅ FIX: Map ki jagah PresenceEventResponse use kiya, taaki online field sahi se jaaye
+    // ✅ Yeh handler ab sahi tarike se kaam karega
     @MessageMapping("/user.presence")
     public void updatePresence(@Payload PresenceEventResponse request, Principal principal) {
         Long userId = extractUserId(principal);
