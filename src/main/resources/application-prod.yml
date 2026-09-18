@@ -37,6 +37,8 @@ management:
       show-details: when_authorized
 
 app:
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}
   resend:
     api-key: ${RESEND_API_KEY}
     from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
