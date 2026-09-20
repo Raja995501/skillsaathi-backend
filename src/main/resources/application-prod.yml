@@ -1,6 +1,6 @@
 spring:
   flyway:
-    enabled: false                   # ✅ false karein agar Flyway use nahi karte
+    enabled: false
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -21,18 +21,7 @@ spring:
       url: ${REDIS_URL}
       ssl:
         enabled: true
-  # ✅ YEH SECTION ADD KAREIN — JavaMailSender bean banane ke liye
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
+  # ❌ spring.mail NAHI hona chahiye — Resend use ho raha hai
 
 logging:
   level:
@@ -50,7 +39,7 @@ management:
 
 app:
   google:
-    client-id: ${GOOGLE_CLIENT_ID:}    # ✅ Default empty (safe)
+    client-id: ${GOOGLE_CLIENT_ID:}
   resend:
     api-key: ${RESEND_API_KEY}
-    from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
+    from-email: ${RESEND_FROM_EMAIL:noreply@skillequator.in}
