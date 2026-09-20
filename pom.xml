@@ -142,11 +142,18 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+
+             <!-- Jackson Java 8 Date/Time support -->
         <dependency>
-            <groupId>com.google.api-client</groupId>
-            <artifactId>google-api-client</artifactId>
-            <version>2.2.0</version>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
+
+             <dependency>
+    <groupId>com.resend</groupId>
+    <artifactId>resend-java</artifactId>
+    <version>3.1.0</version>
+</dependency>
 
     </dependencies>
 
