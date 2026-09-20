@@ -35,7 +35,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 
-    // ✅ GOOGLE LOGIN ENDPOINT
+    // ✅ GOOGLE LOGIN ENDPOINT (Naya add kiya)
     @PostMapping("/google")
     public ResponseEntity<ApiResponse<AuthResponse>> googleLogin(@Valid @RequestBody GoogleTokenRequest request) {
         AuthResponse response = authService.googleLogin(request);
