@@ -1,5 +1,9 @@
 package com.skillsaathi.service.impl;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import com.skillsaathi.dto.auth.*;
 import com.skillsaathi.entity.*;
 import com.skillsaathi.exception.BadRequestException;
@@ -11,6 +15,7 @@ import com.skillsaathi.security.JwtService;
 import com.skillsaathi.service.AuthService;
 import com.skillsaathi.service.EmailService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,9 +24,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -41,6 +48,9 @@ public class AuthServiceImpl implements AuthService {
     @Value("${app.jwt.refresh-token-expiry-ms}")
     private long refreshTokenExpiryMs;
 
+    @Value("${app.google.client-id:}")
+    private String googleClientId;
+
     private static final String DEFAULT_ROLE = "USER";
 
     @Override
@@ -50,12 +60,10 @@ public class AuthServiceImpl implements AuthService {
         if (existingUserOpt.isPresent()) {
             User existingUser = existingUserOpt.get();
 
-            // Agar user pehle se verified hai, tab error throw karo
             if (existingUser.isEmailVerified()) {
                 throw new BadRequestException("An account with this email already exists");
             }
 
-            // Agar user unverified hai, toh details update karo aur naya verification link bhejo
             existingUser.setName(request.getName());
             existingUser.setPassword(passwordEncoder.encode(request.getPassword()));
             existingUser.setPhone(request.getPhone());
@@ -63,7 +71,6 @@ public class AuthServiceImpl implements AuthService {
             existingUser.setState(request.getState());
             userRepository.save(existingUser);
 
-            // Purana verification token agar ho toh hata sakte hain ya direct naya create kar sakte hain
             emailVerificationTokenRepository.deleteByUser(existingUser);
 
             String token = UUID.randomUUID().toString();
@@ -75,10 +82,9 @@ public class AuthServiceImpl implements AuthService {
             emailVerificationTokenRepository.save(verificationToken);
 
             emailService.sendVerificationEmail(existingUser.getEmail(), existingUser.getName(), token);
-            return; // Yahin se successfully return ho jayega
+            return;
         }
 
-        // Naye user ke liye normal registration logic
         Role userRole = roleRepository.findByName(DEFAULT_ROLE)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Default role '" + DEFAULT_ROLE + "' not found. Seed roles before registering users."));
@@ -143,6 +149,75 @@ public class AuthServiceImpl implements AuthService {
         return buildAuthResponse(user);
     }
 
+    // ✅ GOOGLE LOGIN IMPLEMENTATION
+    @Override
+    public AuthResponse googleLogin(GoogleTokenRequest request) {
+        try {
+            // 1. Google ID Token verify karein
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    new NetHttpTransport(), GsonFactory.getDefaultInstance())
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(request.getToken());
+
+            if (idToken == null) {
+                throw new BadRequestException("Invalid Google token");
+            }
+
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            String name = (String) payload.get("name");
+            String picture = (String) payload.get("picture");
+
+            // 2. User dhundhein ya naya banayein
+            User user = userRepository.findByEmail(email).orElse(null);
+
+            if (user == null) {
+                // Naya user banayein
+                Role userRole = roleRepository.findByName(DEFAULT_ROLE)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Default role '" + DEFAULT_ROLE + "' not found."));
+
+                user = User.builder()
+                        .name(name != null ? name : email.split("@")[0])
+                        .email(email)
+                        .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                        .profilePictureUrl(picture)
+                        .provider("GOOGLE")
+                        .emailVerified(true)
+                        .blocked(false)
+                        .role(userRole)
+                        .build();
+
+                userRepository.save(user);
+                log.info("New user created via Google: {}", email);
+            } else {
+                // Existing user — provider update karein
+                if (user.getProvider() == null || "LOCAL".equals(user.getProvider())) {
+                    user.setProvider("GOOGLE");
+                    user.setEmailVerified(true);
+                    if (user.getProfilePictureUrl() == null && picture != null) {
+                        user.setProfilePictureUrl(picture);
+                    }
+                    userRepository.save(user);
+                }
+
+                if (user.isBlocked()) {
+                    throw new BadRequestException("This account has been blocked. Contact support.");
+                }
+            }
+
+            return buildAuthResponse(user);
+
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Google authentication failed", e);
+            throw new BadRequestException("Google authentication failed. Please try again.");
+        }
+    }
+
     @Override
     public AuthResponse refreshToken(String requestRefreshToken) {
         RefreshToken storedToken = refreshTokenRepository.findByToken(requestRefreshToken)
@@ -154,8 +229,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = storedToken.getUser();
-
-        // Rotate refresh token: delete old, issue new
         refreshTokenRepository.delete(storedToken);
 
         return buildAuthResponse(user);
@@ -169,12 +242,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void forgotPassword(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElse(null);
-
-        if (user == null) {
-            return;
-        }
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) return;
 
         String token = UUID.randomUUID().toString();
         PasswordResetToken resetToken = PasswordResetToken.builder()

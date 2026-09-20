@@ -79,6 +79,11 @@ public class User {
     @Builder.Default
     private BigDecimal averageRating = BigDecimal.ZERO;
 
+    // ✅ GOOGLE LOGIN: Auth provider (LOCAL for email/password, GOOGLE for Google login)
+    @Column(length = 20)
+    @Builder.Default
+    private String provider = "LOCAL";
+
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;

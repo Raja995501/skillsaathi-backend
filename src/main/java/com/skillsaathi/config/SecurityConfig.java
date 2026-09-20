@@ -37,6 +37,8 @@ public class SecurityConfig {
     private String allowedOrigins;
 
     private static final String[] PUBLIC_ENDPOINTS = {
+            // ✅ GOOGLE LOGIN: Ye line already /api/v1/auth/google ko cover karti hai
+            // Isliye Google endpoint automatically public hai, koi change nahi chahiye
             "/api/v1/auth/**",
             "/api/v1/skills/categories",
             "/api/v1/skills",
@@ -60,7 +62,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                // Security headers added to boost security score to A+
                 .headers(headers -> headers
                         .httpStrictTransportSecurity(hsts -> hsts
                                 .includeSubDomains(true)
