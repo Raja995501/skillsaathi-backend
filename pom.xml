@@ -162,6 +162,13 @@
     <version>2.2.0</version>
 </dependency>
 
+             <!-- Web Push Library for Java -->
+<dependency>
+    <groupId>nl.martijndwars</groupId>
+    <artifactId>web-push</artifactId>
+    <version>5.1.1</version>
+</dependency>
+
     </dependencies>
 
     <build>
