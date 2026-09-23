@@ -130,6 +130,7 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Rate Limiting -->
         <dependency>
             <groupId>com.bucket4j</groupId>
             <artifactId>bucket4j-core</artifactId>
@@ -142,7 +143,7 @@
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
 
-        <!-- Resend -->
+        <!-- Resend Email -->
         <dependency>
             <groupId>com.resend</groupId>
             <artifactId>resend-java</artifactId>
