@@ -45,7 +45,8 @@ public class SecurityConfig {
             "/api/v1/search/**",
             "/ws/**",
             "/actuator/health",
-            "/actuator/info"
+            "/actuator/info",
+            "/api/v1/notifications/push/public-key"
     };
 
     @Bean
