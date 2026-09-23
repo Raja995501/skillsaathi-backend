@@ -2,7 +2,7 @@ spring:
   application:
     name: skillsaathi-backend
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
+    active: ${SPRING_PROFILES_ACTIVE:prod}
   jackson:
     default-property-inclusion: non_null
   servlet:
