@@ -130,26 +130,20 @@
             <scope>test</scope>
         </dependency>
 
-
+        <!-- Rate Limiting -->
         <dependency>
             <groupId>com.bucket4j</groupId>
             <artifactId>bucket4j-core</artifactId>
             <version>8.10.1</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-
-
-<<<<<<< HEAD
         <!-- Jackson Java 8 Date/Time support -->
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
 
+        <!-- Resend Email -->
         <dependency>
             <groupId>com.resend</groupId>
             <artifactId>resend-java</artifactId>
@@ -157,15 +151,12 @@
         </dependency>
 
         <!-- Google API Client for Google Login -->
-=======
-             <!-- Jackson Java 8 Date/Time support -->
->>>>>>> 0e0e9e8022233a99b347ff23935bdc43e5146019
         <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>2.2.0</version>
         </dependency>
 
-<<<<<<< HEAD
         <!-- Web Push Library for Java -->
         <dependency>
             <groupId>nl.martijndwars</groupId>
@@ -179,30 +170,6 @@
             <artifactId>bcprov-jdk18on</artifactId>
             <version>1.78.1</version>
         </dependency>
-
-
-=======
-             <dependency>
-    <groupId>com.resend</groupId>
-    <artifactId>resend-java</artifactId>
-    <version>3.1.0</version>
-</dependency>
-
-             <!-- Google API Client for Google Login -->
-<dependency>
-    <groupId>com.google.api-client</groupId>
-    <artifactId>google-api-client</artifactId>
-    <version>2.2.0</version>
-</dependency>
-
-             <!-- Web Push Library for Java -->
-<dependency>
-    <groupId>nl.martijndwars</groupId>
-    <artifactId>web-push</artifactId>
-    <version>5.1.1</version>
-</dependency>
->>>>>>> 0e0e9e8022233a99b347ff23935bdc43e5146019
-
     </dependencies>
 
     <build>
