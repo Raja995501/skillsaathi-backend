@@ -43,3 +43,9 @@ app:
   resend:
     api-key: ${RESEND_API_KEY}
     from-email: ${RESEND_FROM_EMAIL:noreply@skillequator.in}
+  vapid:
+    public:
+      key: ${APP_VAPID_PUBLIC_KEY}
+    private:
+      key: ${APP_VAPID_PRIVATE_KEY}
+    subject: ${APP_VAPID_SUBJECT:mailto:skillequator@gmail.com}
