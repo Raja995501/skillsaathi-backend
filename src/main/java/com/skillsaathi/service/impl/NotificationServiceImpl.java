@@ -8,6 +8,7 @@ import com.skillsaathi.exception.ResourceNotFoundException;
 import com.skillsaathi.repository.NotificationRepository;
 import com.skillsaathi.repository.UserRepository;
 import com.skillsaathi.service.NotificationService;
+import com.skillsaathi.service.WebPushService; // <-- Isko import kar lena
 import com.skillsaathi.websocket.ChatEventPublisher;
 import com.skillsaathi.websocket.WsEventType;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final ChatEventPublisher chatEventPublisher;
+    private final WebPushService webPushService; // <-- Web push service inject ki yahan
 
     @Override
     public void create(Long userId, NotificationType type, String title, String body, Long referenceId) {
@@ -41,10 +43,17 @@ public class NotificationServiceImpl implements NotificationService {
 
         notificationRepository.save(notification);
 
-        // Live push — if the user has an open WebSocket session it arrives instantly;
-        // if not, it's already safely persisted and shows up next time they call GET /notifications.
+        // 1. Live WebSocket push (Jab user website par active ho)
         String destination = "/topic/user." + userId + ".notifications";
         chatEventPublisher.publish(WsEventType.NOTIFICATION, destination, toResponse(notification));
+
+        // 2. Background Web Push Notification (Jab user website par na ho)
+        try {
+            String payload = "{\"title\":\"" + title + "\", \"body\":\"" + body + "\"}";
+            webPushService.sendNotificationToUser(userId, payload);
+        } catch (Exception e) {
+            System.err.println("Web push failed: " + e.getMessage());
+        }
     }
 
     @Override
@@ -63,7 +72,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
 
         if (!notification.getUser().getId().equals(userId)) {
-            throw new ResourceNotFoundException("Notification not found"); // don't leak existence to other users
+            throw new ResourceNotFoundException("Notification not found");
         }
 
         notification.setRead(true);
