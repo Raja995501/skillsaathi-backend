@@ -5,6 +5,7 @@ import com.skillsaathi.dto.notification.NotificationResponse;
 import com.skillsaathi.entity.PushSubscription;
 import com.skillsaathi.repository.PushSubscriptionRepository;
 import com.skillsaathi.service.NotificationService;
+import com.skillsaathi.service.WebPushService;
 import com.skillsaathi.util.SecurityUtils;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class NotificationController {
 
     private final NotificationService notificationService;
     private final PushSubscriptionRepository pushSubscriptionRepository;
+    private final WebPushService webPushService;  // ✅ NEW
 
     @Value("${app.vapid.public.key}")
     private String vapidPublicKey;
@@ -60,26 +62,17 @@ public class NotificationController {
 
     // ===== NEW: WEB PUSH METHODS =====
 
-    /**
-     * Frontend calls this to get VAPID public key for pushManager.subscribe().
-     * Public endpoint — no auth needed.
-     */
     @GetMapping("/push/public-key")
     public ResponseEntity<ApiResponse<Map<String, String>>> getPushPublicKey() {
         return ResponseEntity.ok(ApiResponse.success(Map.of("publicKey", vapidPublicKey)));
     }
 
-    /**
-     * Frontend calls this after pushManager.subscribe() succeeds.
-     * Saves endpoint + keys for the logged-in user.
-     */
     @PostMapping("/push/subscribe")
     public ResponseEntity<ApiResponse<Void>> subscribeToPush(
             @RequestBody PushSubscribeRequest request) {
 
         Long userId = SecurityUtils.getCurrentUserId();
 
-        // Avoid duplicate — same user + same endpoint = update keys
         pushSubscriptionRepository.findByUserId(userId).stream()
                 .filter(s -> s.getEndpoint().equals(request.getEndpoint()))
                 .findFirst()
@@ -102,9 +95,6 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success("Subscribed", null));
     }
 
-    /**
-     * Optional: frontend calls this on logout to remove subscription.
-     */
     @DeleteMapping("/push/unsubscribe")
     public ResponseEntity<ApiResponse<Void>> unsubscribeFromPush(
             @RequestParam String endpoint) {
@@ -117,6 +107,17 @@ public class NotificationController {
                 .ifPresent(pushSubscriptionRepository::delete);
 
         return ResponseEntity.ok(ApiResponse.success("Unsubscribed", null));
+    }
+
+    // ===== NEW: TEST PUSH ENDPOINT =====
+    // DELETE this after verification
+
+    @PostMapping("/push/test")
+    public ResponseEntity<ApiResponse<Void>> testPush() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        String payload = "{\"title\":\"Test Push\",\"body\":\"Ye ek test notification hai!\"}";
+        webPushService.sendNotificationToUser(userId, payload);
+        return ResponseEntity.ok(ApiResponse.success("Test push sent", null));
     }
 
     @Data
