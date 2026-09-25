@@ -161,7 +161,14 @@
         <dependency>
             <groupId>nl.martijndwars</groupId>
             <artifactId>web-push</artifactId>
-            <version>5.1.2</version>
+            <version>5.1.1</version>
+        </dependency>
+
+        <!-- ✅ jose4j — required by web-push for JWT signing (VAPID) -->
+        <dependency>
+            <groupId>org.bitbucket.b_c</groupId>
+            <artifactId>jose4j</artifactId>
+            <version>0.9.6</version>
         </dependency>
 
         <!-- BouncyCastle — required by web-push for VAPID encryption -->
@@ -171,14 +178,13 @@
             <version>1.78.1</version>
         </dependency>
 
-        <!-- ✅ NEW: Apache HttpAsyncClient for custom SSL config (FCM compatibility) -->
+        <!-- Apache HttpAsyncClient (transitive, explicit for safety) -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpasyncclient</artifactId>
             <version>4.1.5</version>
         </dependency>
 
-        <!-- ✅ NEW: Apache HttpClient (already transitive, but explicit for SSL config) -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
