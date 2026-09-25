@@ -161,7 +161,7 @@
         <dependency>
             <groupId>nl.martijndwars</groupId>
             <artifactId>web-push</artifactId>
-            <version>5.1.1</version>
+            <version>5.1.2</version>
         </dependency>
 
         <!-- BouncyCastle — required by web-push for VAPID encryption -->
@@ -169,6 +169,20 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
             <version>1.78.1</version>
+        </dependency>
+
+        <!-- ✅ NEW: Apache HttpAsyncClient for custom SSL config (FCM compatibility) -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpasyncclient</artifactId>
+            <version>4.1.5</version>
+        </dependency>
+
+        <!-- ✅ NEW: Apache HttpClient (already transitive, but explicit for SSL config) -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
         </dependency>
     </dependencies>
 

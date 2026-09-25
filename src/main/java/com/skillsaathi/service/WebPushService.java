@@ -39,15 +39,25 @@ public class WebPushService {
             if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
                 Security.addProvider(new BouncyCastleProvider());
             }
-            // New API: constructor-based init
+
             pushService = new PushService(publicKey, privateKey, subject);
+            System.out.println("✅ WebPushService initialized successfully");
         } catch (Exception e) {
+            System.err.println("❌ WebPushService init FAILED: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     public void sendNotificationToUser(Long userId, String payload) {
         List<PushSubscription> subscriptions = subscriptionRepository.findByUserId(userId);
+
+        System.out.println("🔔 PUSH ATTEMPT: userId=" + userId +
+                ", subscriptions=" + subscriptions.size());
+
+        if (subscriptions.isEmpty()) {
+            System.out.println("⚠️ No push subscriptions for user " + userId);
+            return;
+        }
 
         for (PushSubscription sub : subscriptions) {
             try {
@@ -59,8 +69,11 @@ public class WebPushService {
                         .build();
 
                 pushService.send(notification);
+                System.out.println("✅ Push SENT to user " + userId);
             } catch (Exception e) {
-                System.err.println("Failed to send push notification: " + e.getMessage());
+                System.err.println("❌ Push FAILED: " + e.getClass().getSimpleName()
+                        + " - " + e.getMessage());
+                e.printStackTrace();
             }
         }
     }
