@@ -20,4 +20,7 @@ public class ChatMessageRequest {
     @Builder.Default
     private MessageType type = MessageType.TEXT; // TEXT, IMAGE, VIDEO
     // =====================================
+
+    // === ADDED SENDER ID SUPPORT ===
+    private Long senderId;
 }
