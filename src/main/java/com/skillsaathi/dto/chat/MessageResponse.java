@@ -13,5 +13,11 @@ public class MessageResponse {
     private Long receiverId;
     private String content;
     private String status;   // SENT, DELIVERED, READ
+
+    // === ADDED FOR MEDIA (IMAGE/VIDEO) ===
+    private String type;     // TEXT, IMAGE, VIDEO
+    private String fileUrl;  // Cloudinary secure URL
+    // =====================================
+
     private LocalDateTime createdAt;
 }

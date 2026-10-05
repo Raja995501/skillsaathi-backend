@@ -1,6 +1,7 @@
 package com.skillsaathi.entity;
 
 import com.skillsaathi.entity.enums.MessageStatus;
+import com.skillsaathi.entity.enums.MessageType; // === ADDED FOR MEDIA ===
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -37,6 +38,16 @@ public class Message {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private MessageStatus status = MessageStatus.SENT;
+
+    // === ADDED FOR MEDIA (IMAGE/VIDEO) ===
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private MessageType type = MessageType.TEXT;
+
+    @Column(name = "file_url", length = 500)
+    private String fileUrl;
+    // =====================================
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

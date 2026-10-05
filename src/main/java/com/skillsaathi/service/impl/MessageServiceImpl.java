@@ -5,6 +5,7 @@ import com.skillsaathi.entity.Connection;
 import com.skillsaathi.entity.Message;
 import com.skillsaathi.entity.User;
 import com.skillsaathi.entity.enums.ConnectionStatus;
+import com.skillsaathi.entity.enums.MessageType; // === ADDED FOR MEDIA ===
 import com.skillsaathi.entity.enums.NotificationType;
 import com.skillsaathi.exception.BadRequestException;
 import com.skillsaathi.exception.ResourceNotFoundException;
@@ -29,8 +30,9 @@ public class MessageServiceImpl implements MessageService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
 
+    // === UPDATED FOR MEDIA ===
     @Override
-    public MessageResponse sendMessage(Long senderId, Long connectionId, String content) {
+    public MessageResponse sendMessage(Long senderId, Long connectionId, String content, String fileUrl, MessageType type) {
         Connection connection = getUnlockedConnection(connectionId, senderId);
 
         User sender = userRepository.findById(senderId)
@@ -38,17 +40,25 @@ public class MessageServiceImpl implements MessageService {
         User receiver = connection.getRequester().getId().equals(senderId)
                 ? connection.getReceiver() : connection.getRequester();
 
+        // Agar type null ho toh default TEXT set kar dein
+        MessageType messageType = (type != null) ? type : MessageType.TEXT;
+
         Message message = Message.builder()
                 .connection(connection)
                 .sender(sender)
                 .receiver(receiver)
-                .content(content)
-                .build(); // status defaults to SENT
+                .content(content != null ? content : (messageType == MessageType.IMAGE ? "Shared an image" : "Shared a video"))
+                .fileUrl(fileUrl)     // === ADDED FOR MEDIA ===
+                .type(messageType)    // === ADDED FOR MEDIA ===
+                .build();
 
         messageRepository.save(message);
+
+        String notifText = messageType == MessageType.TEXT ? (content.length() > 80 ? content.substring(0, 80) + "..." : content) : "Sent a " + messageType.name().toLowerCase();
+
         notificationService.create(receiver.getId(), NotificationType.NEW_MESSAGE,
                 "New message from " + sender.getName(),
-                content.length() > 80 ? content.substring(0, 80) + "..." : content,
+                notifText,
                 message.getId());
 
         return toResponse(message);
@@ -58,9 +68,6 @@ public class MessageServiceImpl implements MessageService {
     @Transactional(readOnly = true)
     public Page<MessageResponse> getHistory(Long userId, Long connectionId, Pageable pageable) {
         Connection connection = getOwnedConnection(connectionId, userId);
-        // History is viewable for any connection the user is part of, even if not yet accepted,
-        // so a receiver can see the request context before deciding — but sending is gated
-        // in sendMessage() via getUnlockedConnection().
         return messageRepository.findByConnectionIdOrderByCreatedAtDesc(connection.getId(), pageable)
                 .map(this::toResponse);
     }
@@ -71,7 +78,6 @@ public class MessageServiceImpl implements MessageService {
         return messageRepository.markAllAsRead(connectionId, userId);
     }
 
-    /** Chat only unlocks once the connection is ACCEPTED — this is the enforcement point. */
     private Connection getUnlockedConnection(Long connectionId, Long userId) {
         Connection connection = getOwnedConnection(connectionId, userId);
         if (connection.getStatus() != ConnectionStatus.ACCEPTED) {
@@ -101,6 +107,8 @@ public class MessageServiceImpl implements MessageService {
                 .receiverId(m.getReceiver().getId())
                 .content(m.getContent())
                 .status(m.getStatus().name())
+                .type(m.getType() != null ? m.getType().name() : "TEXT") // === ADDED FOR MEDIA ===
+                .fileUrl(m.getFileUrl())                                 // === ADDED FOR MEDIA ===
                 .createdAt(m.getCreatedAt())
                 .build();
     }

@@ -9,4 +9,7 @@ public interface MediaStorageService {
      * @param folder logical folder in Cloudinary, e.g. "skillsaathi/profile-pictures"
      */
     String uploadImage(MultipartFile file, String folder);
+
+    // === ADDED FOR CHAT MEDIA (IMAGE & VIDEO) ===
+    String uploadChatMedia(MultipartFile file, String folder);
 }

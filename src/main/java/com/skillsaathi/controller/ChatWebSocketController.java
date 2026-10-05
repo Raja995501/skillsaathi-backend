@@ -27,7 +27,16 @@ public class ChatWebSocketController {
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload ChatMessageRequest request, Principal principal) {
         Long senderId = extractUserId(principal);
-        MessageResponse saved = messageService.sendMessage(senderId, request.getConnectionId(), request.getContent());
+
+        // === MEDIA SUPPORT: Passing fileUrl and type to service ===
+        MessageResponse saved = messageService.sendMessage(
+                senderId,
+                request.getConnectionId(),
+                request.getContent(),
+                request.getFileUrl(),
+                request.getType()
+        );
+
         String destination = "/topic/connection." + request.getConnectionId();
         chatEventPublisher.publish(WsEventType.NEW_MESSAGE, destination, saved);
     }
@@ -48,7 +57,6 @@ public class ChatWebSocketController {
         chatEventPublisher.publish(WsEventType.TYPING, destination, event);
     }
 
-    // ✅ Yeh handler ab sahi tarike se kaam karega
     @MessageMapping("/user.presence")
     public void updatePresence(@Payload PresenceEventResponse request, Principal principal) {
         Long userId = extractUserId(principal);
