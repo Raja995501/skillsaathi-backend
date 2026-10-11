@@ -16,6 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -28,7 +29,6 @@ public class ChatWebSocketController {
     public void sendMessage(@Payload ChatMessageRequest request, Principal principal) {
         Long senderId = extractUserId(principal);
 
-        // === MEDIA SUPPORT: Passing fileUrl and type to service ===
         MessageResponse saved = messageService.sendMessage(
                 senderId,
                 request.getConnectionId(),
@@ -40,6 +40,35 @@ public class ChatWebSocketController {
         String destination = "/topic/connection." + request.getConnectionId();
         chatEventPublisher.publish(WsEventType.NEW_MESSAGE, destination, saved);
     }
+
+    // === DELETE FEATURE ===
+
+    /**
+     * Payload: { connectionId, messageId, forEveryone: true/false }
+     */
+    @MessageMapping("/chat.delete")
+    public void deleteMessage(@Payload Map<String, Object> payload, Principal principal) {
+        Long userId = extractUserId(principal);
+
+        Long connectionId = Long.valueOf(payload.get("connectionId").toString());
+        Long messageId = Long.valueOf(payload.get("messageId").toString());
+        boolean forEveryone = Boolean.TRUE.equals(payload.get("forEveryone"));
+
+        if (forEveryone) {
+            messageService.deleteForEveryone(userId, messageId);
+        } else {
+            messageService.deleteForMe(userId, messageId);
+        }
+
+        // Broadcast deletion event to the connection topic
+        String destination = "/topic/connection." + connectionId + ".delete";
+        chatEventPublisher.publish(WsEventType.NEW_MESSAGE, destination, Map.of(
+                "messageId", messageId,
+                "deletedByUserId", userId,
+                "forEveryone", forEveryone
+        ));
+    }
+    // =======================
 
     @MessageMapping("/chat.typing")
     public void typing(@Payload TypingEventRequest request, Principal principal) {

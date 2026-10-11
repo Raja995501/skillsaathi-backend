@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-/** REST endpoints for chat HISTORY. Live delivery happens over STOMP — see ChatWebSocketController. */
+/** REST endpoints for chat HISTORY. Live delivery happens over STOMP. */
 @RestController
 @RequestMapping("/api/v1/connections/{connectionId}/messages")
 @RequiredArgsConstructor
@@ -47,4 +47,31 @@ public class ChatController {
 
         return ResponseEntity.ok(ApiResponse.success("Marked as read", null));
     }
+
+    // === DELETE FEATURE (REST fallback) ===
+
+    @DeleteMapping("/{messageId}")
+    public ResponseEntity<ApiResponse<Void>> deleteMessage(
+            @PathVariable Long connectionId,
+            @PathVariable Long messageId,
+            @RequestParam(defaultValue = "false") boolean forEveryone) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        if (forEveryone) {
+            messageService.deleteForEveryone(userId, messageId);
+        } else {
+            messageService.deleteForMe(userId, messageId);
+        }
+
+        String destination = "/topic/connection." + connectionId + ".delete";
+        chatEventPublisher.publish(WsEventType.NEW_MESSAGE, destination, Map.of(
+                "messageId", messageId,
+                "deletedByUserId", userId,
+                "forEveryone", forEveryone
+        ));
+
+        return ResponseEntity.ok(ApiResponse.success("Deleted", null));
+    }
+    // ======================================
 }
