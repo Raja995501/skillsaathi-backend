@@ -14,4 +14,6 @@ public interface MessageService {
     Page<MessageResponse> getHistory(Long userId, Long connectionId, Pageable pageable);
 
     int markAsRead(Long userId, Long connectionId);
+    void deleteForMe(Long userId, Long messageId);
+    void deleteForEveryone(Long userId, Long messageId);
 }

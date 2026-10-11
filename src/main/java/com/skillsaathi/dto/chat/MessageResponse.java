@@ -14,10 +14,15 @@ public class MessageResponse {
     private String content;
     private String status;   // SENT, DELIVERED, READ
 
-    // === ADDED FOR MEDIA (IMAGE/VIDEO) ===
+    // === MEDIA (IMAGE/VIDEO) ===
     private String type;     // TEXT, IMAGE, VIDEO
-    private String fileUrl;  // Cloudinary secure URL
-    // =====================================
+    private String fileUrl;
+
+    // === DELETE FEATURE ===
+    private Boolean deleted;        // true if deleted for everyone OR for current user
+    private Boolean canDelete;      // true if current user can delete this message
+    private Boolean deletedForEveryone;  // true if deleted for everyone (shows "This message was deleted")
+    // ========================
 
     private LocalDateTime createdAt;
 }

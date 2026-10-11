@@ -1,12 +1,14 @@
 package com.skillsaathi.entity;
 
 import com.skillsaathi.entity.enums.MessageStatus;
-import com.skillsaathi.entity.enums.MessageType; // === ADDED FOR MEDIA ===
+import com.skillsaathi.entity.enums.MessageType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "message", indexes = {
@@ -39,7 +41,7 @@ public class Message {
     @Builder.Default
     private MessageStatus status = MessageStatus.SENT;
 
-    // === ADDED FOR MEDIA (IMAGE/VIDEO) ===
+    // === MEDIA (IMAGE/VIDEO) ===
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
@@ -47,7 +49,24 @@ public class Message {
 
     @Column(name = "file_url", length = 500)
     private String fileUrl;
-    // =====================================
+
+    // === DELETE FEATURE ===
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "message_deleted_for_me",
+            joinColumns = @JoinColumn(name = "message_id")
+    )
+    @Column(name = "user_id")
+    @Builder.Default
+    private List<Long> deletedForMe = new ArrayList<>();
+
+    @Column(name = "deleted_for_everyone", nullable = false)
+    @Builder.Default
+    private Boolean deletedForEveryone = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+    // ========================
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
