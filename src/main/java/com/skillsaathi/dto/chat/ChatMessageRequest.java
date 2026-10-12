@@ -1,10 +1,9 @@
 package com.skillsaathi.dto.chat;
 
-import com.skillsaathi.entity.enums.MessageType; // === ADDED FOR MEDIA ===
+import com.skillsaathi.entity.enums.MessageType;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-/** Inbound payload for STOMP destination /app/chat.send */
 @Builder
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class ChatMessageRequest {
@@ -12,15 +11,16 @@ public class ChatMessageRequest {
     @NotNull
     private Long connectionId;
 
-    private String content; // Text message (optional agar image/video bheji ja rahi ho)
+    private String content;
 
-    // === ADDED FOR MEDIA (IMAGE/VIDEO) ===
-    private String fileUrl; // Cloudinary secure URL
+    private String fileUrl;
 
     @Builder.Default
-    private MessageType type = MessageType.TEXT; // TEXT, IMAGE, VIDEO
-    // =====================================
+    private MessageType type = MessageType.TEXT;
 
-    // === ADDED SENDER ID SUPPORT ===
+    // ✅ Reply
+    private Long replyToId;
+
+    // Optional
     private Long senderId;
 }

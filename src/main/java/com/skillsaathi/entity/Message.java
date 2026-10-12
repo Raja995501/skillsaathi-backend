@@ -41,7 +41,7 @@ public class Message {
     @Builder.Default
     private MessageStatus status = MessageStatus.SENT;
 
-    // === MEDIA (IMAGE/VIDEO) ===
+    // === MEDIA ===
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
@@ -66,7 +66,18 @@ public class Message {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-    // ========================
+
+    // === EDIT FEATURE ===
+    @Column(name = "edited", nullable = false)
+    @Builder.Default
+    private Boolean edited = false;
+
+    @Column(name = "edited_at")
+    private LocalDateTime editedAt;
+
+    // === REPLY FEATURE ===
+    @Column(name = "reply_to_id")
+    private Long replyToId;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

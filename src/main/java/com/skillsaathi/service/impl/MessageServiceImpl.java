@@ -16,10 +16,12 @@ import com.skillsaathi.service.MessageService;
 import com.skillsaathi.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,8 +36,10 @@ public class MessageServiceImpl implements MessageService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
 
+    private static final long EDIT_WINDOW_MINUTES = 15;
+
     @Override
-    public MessageResponse sendMessage(Long senderId, Long connectionId, String content, String fileUrl, MessageType type) {
+    public MessageResponse sendMessage(Long senderId, Long connectionId, String content, String fileUrl, MessageType type, Long replyToId) {
         Connection connection = getUnlockedConnection(connectionId, senderId);
 
         User sender = userRepository.findById(senderId)
@@ -52,12 +56,13 @@ public class MessageServiceImpl implements MessageService {
                 .content(content != null ? content : (messageType == MessageType.IMAGE ? "Shared an image" : "Shared a video"))
                 .fileUrl(fileUrl)
                 .type(messageType)
+                .replyToId(replyToId)
                 .build();
 
         messageRepository.save(message);
 
         String notifText = messageType == MessageType.TEXT
-                ? (content.length() > 80 ? content.substring(0, 80) + "..." : content)
+                ? (content != null && content.length() > 80 ? content.substring(0, 80) + "..." : content)
                 : "Sent a " + messageType.name().toLowerCase();
 
         notificationService.create(receiver.getId(), NotificationType.NEW_MESSAGE,
@@ -73,17 +78,19 @@ public class MessageServiceImpl implements MessageService {
     public Page<MessageResponse> getHistory(Long userId, Long connectionId, Pageable pageable) {
         Connection connection = getOwnedConnection(connectionId, userId);
 
-        return messageRepository
-                .findByConnectionIdOrderByCreatedAtDesc(connection.getId(), pageable)
-                // Filter out messages deleted "for me" by this user
-                .map(m -> {
+        Page<Message> page = messageRepository
+                .findByConnectionIdOrderByCreatedAtDesc(connection.getId(), pageable);
+
+        List<MessageResponse> filtered = page.getContent().stream()
+                .filter(m -> {
                     boolean deletedForMe = m.getDeletedForMe() != null
                             && m.getDeletedForMe().contains(userId);
-                    boolean deletedForEveryone = Boolean.TRUE.equals(m.getDeletedForEveryone());
-                    boolean hidden = deletedForMe || deletedForEveryone;
-                    return hidden ? null : toResponse(m, userId);
+                    return !deletedForMe;
                 })
-                .map(resp -> resp); // Keep type
+                .map(m -> toResponse(m, userId))
+                .toList();
+
+        return new PageImpl<>(filtered, pageable, page.getTotalElements());
     }
 
     @Override
@@ -92,14 +99,11 @@ public class MessageServiceImpl implements MessageService {
         return messageRepository.markAllAsRead(connectionId, userId);
     }
 
-    // === DELETE FEATURE ===
-
     @Override
     public void deleteForMe(Long userId, Long messageId) {
         Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new ResourceNotFoundException("Message not found"));
 
-        // Must be part of the connection
         Long connectionId = message.getConnection().getId();
         getOwnedConnection(connectionId, userId);
 
@@ -120,7 +124,6 @@ public class MessageServiceImpl implements MessageService {
         Long connectionId = message.getConnection().getId();
         getOwnedConnection(connectionId, userId);
 
-        // Only sender can delete for everyone
         if (!message.getSender().getId().equals(userId)) {
             throw new BadRequestException("Only the sender can delete for everyone");
         }
@@ -129,7 +132,45 @@ public class MessageServiceImpl implements MessageService {
         message.setDeletedAt(LocalDateTime.now());
         messageRepository.save(message);
     }
-    // =======================
+
+    // ✅ EDIT FEATURE
+    @Override
+    public MessageResponse editMessage(Long userId, Long messageId, String newContent) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Message not found"));
+
+        Long connectionId = message.getConnection().getId();
+        getOwnedConnection(connectionId, userId);
+
+        // Only sender can edit
+        if (!message.getSender().getId().equals(userId)) {
+            throw new BadRequestException("Only the sender can edit");
+        }
+
+        // Only TEXT messages can be edited
+        if (message.getType() != MessageType.TEXT) {
+            throw new BadRequestException("Only text messages can be edited");
+        }
+
+        // Check edit window (15 min)
+        if (message.getCreatedAt() != null) {
+            long minutes = Duration.between(message.getCreatedAt(), LocalDateTime.now()).toMinutes();
+            if (minutes > EDIT_WINDOW_MINUTES) {
+                throw new BadRequestException("Edit window expired (15 minutes)");
+            }
+        }
+
+        if (newContent == null || newContent.trim().isEmpty()) {
+            throw new BadRequestException("Content cannot be empty");
+        }
+
+        message.setContent(newContent.trim());
+        message.setEdited(true);
+        message.setEditedAt(LocalDateTime.now());
+        messageRepository.save(message);
+
+        return toResponse(message, userId);
+    }
 
     private Connection getUnlockedConnection(Long connectionId, Long userId) {
         Connection connection = getOwnedConnection(connectionId, userId);
@@ -161,6 +202,20 @@ public class MessageServiceImpl implements MessageService {
             displayContent = "This message was deleted";
         }
 
+        // Reply info
+        Long replyToId = m.getReplyToId();
+        String replyToContent = null;
+        String replyToSenderName = null;
+        String replyToType = null;
+        if (replyToId != null) {
+            Message replied = messageRepository.findById(replyToId).orElse(null);
+            if (replied != null) {
+                replyToContent = replied.getContent();
+                replyToSenderName = replied.getSender().getName();
+                replyToType = replied.getType() != null ? replied.getType().name() : "TEXT";
+            }
+        }
+
         return MessageResponse.builder()
                 .id(m.getId())
                 .connectionId(m.getConnection().getId())
@@ -170,10 +225,16 @@ public class MessageServiceImpl implements MessageService {
                 .content(displayContent)
                 .status(m.getStatus().name())
                 .type(m.getType() != null ? m.getType().name() : "TEXT")
-                .fileUrl(deletedForEveryone ? null : m.getFileUrl())  // hide media if deleted for everyone
+                .fileUrl(deletedForEveryone ? null : m.getFileUrl())
                 .deleted(deletedForMe || deletedForEveryone)
                 .canDelete(canDelete)
                 .deletedForEveryone(deletedForEveryone)
+                .edited(m.getEdited() != null ? m.getEdited() : false)
+                .editedAt(m.getEditedAt())
+                .replyToId(replyToId)
+                .replyToContent(replyToContent)
+                .replyToSenderName(replyToSenderName)
+                .replyToType(replyToType)
                 .createdAt(m.getCreatedAt())
                 .build();
     }

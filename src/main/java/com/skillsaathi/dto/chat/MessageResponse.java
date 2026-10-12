@@ -12,17 +12,26 @@ public class MessageResponse {
     private String senderName;
     private Long receiverId;
     private String content;
-    private String status;   // SENT, DELIVERED, READ
+    private String status;
 
-    // === MEDIA (IMAGE/VIDEO) ===
-    private String type;     // TEXT, IMAGE, VIDEO
+    // Media
+    private String type;
     private String fileUrl;
 
-    // === DELETE FEATURE ===
-    private Boolean deleted;        // true if deleted for everyone OR for current user
-    private Boolean canDelete;      // true if current user can delete this message
-    private Boolean deletedForEveryone;  // true if deleted for everyone (shows "This message was deleted")
-    // ========================
+    // Delete
+    private Boolean deleted;
+    private Boolean canDelete;
+    private Boolean deletedForEveryone;
+
+    // Edit
+    private Boolean edited;
+    private LocalDateTime editedAt;
+
+    // Reply
+    private Long replyToId;
+    private String replyToContent;
+    private String replyToSenderName;
+    private String replyToType;
 
     private LocalDateTime createdAt;
 }
