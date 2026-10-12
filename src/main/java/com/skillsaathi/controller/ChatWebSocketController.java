@@ -38,8 +38,16 @@ public class ChatWebSocketController {
                 request.getReplyToId()
         );
 
+        // 1. Broadcast to connection topic (for active chat)
         String destination = "/topic/connection." + request.getConnectionId();
         chatEventPublisher.publish(WsEventType.NEW_MESSAGE, destination, saved);
+
+        // ✅ NEW: Broadcast to RECEIVER's personal topic (for unread badges)
+        Long receiverId = saved.getReceiverId();
+        if (receiverId != null && !receiverId.equals(senderId)) {
+            String userDestination = "/topic/user." + receiverId + ".new-message";
+            chatEventPublisher.publish(WsEventType.NEW_MESSAGE, userDestination, saved);
+        }
     }
 
     @MessageMapping("/chat.delete")
@@ -64,7 +72,6 @@ public class ChatWebSocketController {
         ));
     }
 
-    // ✅ EDIT
     @MessageMapping("/chat.edit")
     public void editMessage(@Payload Map<String, Object> payload, Principal principal) {
         Long userId = extractUserId(principal);
